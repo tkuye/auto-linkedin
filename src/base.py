@@ -40,6 +40,7 @@ class Base:
     def create_message(self, message: str, name: str = None, person: str = None):
         if not message:
             return message
+        name = name.split(" ")[0]
         if person is None and "{person}" in message:
             raise MessageError("Message contains {person} but no person was provided")
         if name is None and "{name}" in message:

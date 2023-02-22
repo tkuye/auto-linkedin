@@ -405,12 +405,13 @@ if __name__ == "__main__":
                 first_name = row["firstName"]
                 message = sales.create_message(args.message, first_name, args.person)
                 print(idx, "Sending message to", row["firstName"], row["lastName"])
+                print('Message: "', message, '"')
                 entity_urn = row["entityUrn"]
 
                 ## regex all content between brackets not including the brackets
                 entity_id = entity_urn[entity_urn.find("(") + 1 : entity_urn.find(")")]
                 profile_id = entity_id.split(",")[0]
-
+                
                 ## send the connection request	
                 if sales.connect(profile_id, message):
                     ## save the connection
