@@ -75,32 +75,38 @@ class Base:
 
         pages = int(end / count)
         leads_local = []
+        try:
+            print("Getting leads...")
+            for page in range(pages):
+                self.headers["user-agent"] = random.choice(self.user_agents)
+                ## replace the start and count params
+                url = url.replace("start=0", f"start={start}")
+                url = url.replace("count=25", f"count={count}")
+                
 
-        print("Getting leads...")
-        for page in range(pages):
-            self.headers["user-agent"] = random.choice(self.user_agents)
-            ## replace the start and count params
-            url = url.replace("start=0", f"start={start}")
-            url = url.replace("count=25", f"count={count}")
+                response = requests.get(url, cookies=self.cookies, headers=self.headers)
+                if response.status_code != 200:
+                    print(f"page: {page} - error {response.status_code} - {response.text}")
+                    break
+                content = response.json()
 
-            response = requests.get(url, cookies=self.cookies, headers=self.headers,)
-            if response.status_code != 200:
-                print(f"page: {page} - error {response.status_code} - {response.text}")
-                break
-            content = response.json()
+                if "elements" in content:
+                    leads_local.extend(content["elements"])
+                    print(f'page: {page} - {len(content["elements"])} leads')
+                else:
+                    print(f"page: {page} - no leads")
+                    break
+                start += count
+                time.sleep(random.randint(time_delay_min, time_delay_max))
+            
+            print(f"Total leads: {len(leads_local)}")
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(leads_local, f, indent=2)
 
-            if "elements" in content:
-                leads_local.extend(content["elements"])
-                print(f'page: {page} - {len(content["elements"])} leads')
-            else:
-                print(f"page: {page} - no leads")
-                break
-
-            start += count
-            time.sleep(random.randint(time_delay_min, time_delay_max))
-
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(leads_local, f, indent=2)
+        except KeyboardInterrupt:
+            print("Saving leads...")
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(leads_local, f, indent=2)
 
     def connect(self, profile_urn, message: str = ""):
         raise NotImplementedError("connect method must be implemented")

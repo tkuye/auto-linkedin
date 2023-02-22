@@ -6,7 +6,7 @@ import time
 import random
 import os
 import csv
-
+import pandas as pd
 from src.base import Base
 
 
@@ -81,7 +81,7 @@ class Recruiter(Base):
             response = self.connect(profile_urn, message)
             return response
 
-    def get_lead_data_filtered(self, data: list):
+    def get_lead_data_filtered(self, data: list, existing_connections:set=None):
         outdata = []
         for lead in data:
             first_name = lead.get("linkedInMemberProfileUrnResolutionResult", {}).get(
@@ -108,6 +108,9 @@ class Recruiter(Base):
                 profile_id = None
 
             if first_name and last_name and profile_id:
+                if existing_connections and profile_id in existing_connections:
+                    print(f"Skipping {profile_id} because it is already connected")
+                    continue
                 outdata.append(
                     {
                         "first_name": first_name,
@@ -115,19 +118,15 @@ class Recruiter(Base):
                         "profile_id": profile_id,
                     }
                 )
-
+        ## remove duplicates
+        outdata = [dict(t) for t in {tuple(d.items()) for d in outdata}]
         print(f"Filtered leads: {len(outdata)}")
         self.filtered_leads = outdata
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--identity",
-        type=str,
-        required=True,
-        help="The identity for the profile you want to use. Must be a directory with headers and cookies.json.",
-    )
+    
 
     subparsers = parser.add_subparsers(
         help="Type of recruiter to use.", dest="recruiter_type"
@@ -172,6 +171,13 @@ if __name__ == "__main__":
         help="The max number of connections to send out.",
     )
 
+    connect_parser.add_argument(
+        "--identity",
+        type=str,
+        required=True,
+        help="The identity for the profile you want to use. Must be a directory with headers and cookies.json.",
+    )
+
     find_parser = subparsers.add_parser(
         "find", help="Find all our leads and save them to a file."
     )
@@ -197,8 +203,20 @@ if __name__ == "__main__":
     find_parser.add_argument(
         "-o", "--output", type=str, default="leads.json", help="path to output file"
     )
+
     find_parser.add_argument(
-        "-d", "--delay", type=int, default=5, help="time delay between requests"
+        "--delay_min", type=int, default=3, help="time delay between requests"
+    )
+
+    find_parser.add_argument(
+        "--delay_max", type=int, default=5, help="time delay between requests"
+    )
+
+    find_parser.add_argument(
+        "--identity",
+        type=str,
+        required=True,
+        help="The identity for the profile you want to use. Must be a directory with headers and cookies.json.",
     )
 
     args = parser.parse_args()
@@ -213,6 +231,8 @@ if __name__ == "__main__":
         cookies_file=identity + "/cookies.json", headers_file=identity + "/headers.json"
     )
 
+
+
     if args.recruiter_type == "connect":
         if args.message:
             if os.path.exists(args.message):
@@ -224,7 +244,18 @@ if __name__ == "__main__":
             sys.exit(1)
         with open(args.leads, "r", encoding="utf-8") as f:
             leads = json.load(f)
-        recruiter.get_lead_data_filtered(leads)
+
+        if os.path.exists(args.connect_file):
+            if args.connect_file.endswith(".csv"):
+                df = pd.read_csv(args.connect_file)
+            elif args.connect_file.endswith(".json"):
+                df = pd.read_json(args.connect_file)
+            else:
+                raise Exception("Invalid file type")
+        
+        existing_connections = set(df["profile_id"].values)
+        recruiter.get_lead_data_filtered(leads, existing_connections)
+        
         for lead in recruiter.filtered_leads:
             try:
                 print(f'Connecting to {lead["first_name"]} {lead["last_name"]}...')
@@ -254,5 +285,5 @@ if __name__ == "__main__":
 
     elif args.recruiter_type == "find":
         recruiter.get_leads(
-            args.url, args.start, args.count, args.end, args.output, args.delay
+            args.url, args.start, args.count, args.end, args.output, args.delay_min, args.delay_max
         )

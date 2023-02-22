@@ -415,8 +415,11 @@ if __name__ == "__main__":
                 ## send the connection request	
                 if sales.connect(profile_id, message):
                     ## save the connection
+                    row['status'] = 'success'
                     print("Connected to", row["firstName"], row["lastName"])
-                    sales.filtered_leads.append(row)
+                else:
+                    row['status'] = 'failure'
+                sales.filtered_leads.append(row)
 
                 ## wait for a random amount of time
                 delay = random.randint(args.send_delay_min, args.send_delay_max)
