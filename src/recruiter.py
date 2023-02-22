@@ -253,12 +253,15 @@ if __name__ == "__main__":
             else:
                 raise Exception("Invalid file type")
         
-        existing_connections = set(df["profile_id"].values)
+            existing_connections = set(df["profile_id"].values)
+        else:
+            existing_connections = set()
         recruiter.get_lead_data_filtered(leads, existing_connections)
         
         for lead in recruiter.filtered_leads:
             try:
                 print(f'Connecting to {lead["first_name"]} {lead["last_name"]}...')
+                print(f"Sending message: '{recruiter.create_message(args.message, lead['first_name'], args.person)}'")
                 res = recruiter.get_profile_and_connect(
                     lead["profile_id"],
                     recruiter.create_message(
