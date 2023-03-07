@@ -1,3 +1,5 @@
+#!/bin/sh
+
 python3 -m src.sales connect \
 --leads data/sales/leads/leads_ranked.json \
 --identity data/identities/matt \

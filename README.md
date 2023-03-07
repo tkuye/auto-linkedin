@@ -1,4 +1,4 @@
-# Auto-Linkedin How To Guide
+# Auto-LinkedIn How To Guide
 
 ## **Requirements**
 
@@ -177,7 +177,7 @@ This is a guide on how to send out leads from a given identity using data retrie
         
     - `--send_delay_min` The minimum delay time in seconds to send the next connection request.
     - `--send_delay_max` The maximum delay time in seconds to send the connection request.
-        - **NOTE:** All the connection requests are sent manually, so the true delay will be a number between the `--send_delay_min` and `--send_delay_max`.
+        - **NOTE:** All the connection requests are sent randomly, so the true delay will be a number between the `--send_delay_min` and `--send_delay_max`.
     - `--person` This is the name of the person you want used in the message to fill the `{person}` field. This ideally should be the same name as the identity folder.
     - `--connect_file` This is the name of the file you want to save the connections whether successful or failed to. Specify the path or location you want to use. This is saved as a `csv` file, so you can quickly add the data to an Excel Spreadsheet or Google Sheets.
 4. Edit the arguments that are necessary to you. For example, if you want to send out connection requests from **Susan’s** LinkedIn account every **3-5** minutes for a maximum of **30** requests, the file would like the following:
@@ -209,12 +209,88 @@ This is a guide on how to send out leads from a given identity using data retrie
     ```
     
     ```powershell
-    scripts\windows\recruiter.bat
+    ./scripts/windows/recruiter.bat
     ```
     
     ```powershell
-    ./scripts/linux/recruiter.sh
+    scripts\linux\recruiter.sh
     ```
     
 6. Once, the script is running, simply wait until it’s complete! Depending on the delay you set between each request and the number of requests total, it may take anywhere from 10 minutes to 2 hours (or longer).
 7. Congrats, you’ve reached the end of this guide!
+
+## Running All Scripts in Folder
+
+This is a guide to run all files in a given folder as one command. 
+
+1. To begin, we need to find the `exec.sh` file. This file will be located in the `scripts` directory underneath the type of computer available. Once you have located the file, click on it to edit. 
+2. The file should look something like this on MacOS or Linux:
+    
+    ```bash
+    #!/bin/sh
+    
+    python3 -m src.exec --directory \
+        scripts/test # edit this line to run a different script with a different folder.
+    ```
+    
+    On Windows:
+    
+    ```visual-basic
+    @echo off
+    
+    python3 "-m" "src.exec" "--directory" "scripts\test" REM Edit the script\test directory to point to your directory.
+    ```
+    
+3. Next, you want to edit the value beside or below the `--directory` argument. This will be the path to the folder you want all the files ran in. After changing this value to any folder, save the file. 
+4. You can now run the script with the following commands:
+    
+    ```bash
+    ./scripts/mac/exec.sh
+    ```
+    
+    ```bash
+    ./scripts/linux/exec.sh
+    ```
+    
+    ```bash
+    scripts\windows\exec.bat
+    ```
+    
+
+## Scheduling Scripts
+
+This is a guide on how to schedule a given script to be run daily, weekly or monthly. In this case we will focus on it being run daily at 9AM every day. 
+
+**********NOTE: THIS ONLY WORKS FOR MAC AND LINUX COMPUTERS**********
+
+To run a script daily we will have to make use of a program known as `crontab.` `crontab` helps you run programs by specify the information associated with when the script should run. 
+
+For our use case, we will be specifying the `scripts/mac/exec.sh` file to be run everyday at 9 AM. 
+
+1. We need the path of our file. We have two options. 
+    1. Using the Finder display on Mac, find the file then **Right Click** on it. You will see a dropdown option named **Get Info.** Click on this to see the absolute path of the file. 
+    2. Using the terminal, navigate to the location of the `exec.sh` file using the `cd` command. Once you are in the correct directory, type the following:
+        
+        ```powershell
+        pwd
+        ```
+        
+        This command will show the current path of the file. Copy this value. You should see something like this:
+        
+        ```powershell
+        /Users/username/Desktop/project/scripts/mac
+        ```
+        
+2. Next, we want to schedule this script. To schedule it to run daily, enter the terminal and enter the following:
+    
+    ```powershell
+    nano crontab -e
+    ```
+    
+    This should open up a file. In this file, paste the following, but change the path to the script that you previously got in step 1. 
+    
+    ```powershell
+    0 9 * * * /Users/username/Desktop/project/scripts/mac/exec.sh
+    ```
+    
+3. You can then run CTRL- S to save the file, and that’s it! The script is now scheduled to run at **9 AM** everyday. To stop running the script. Go through step 2 again, but delete the content of the file and save it.
