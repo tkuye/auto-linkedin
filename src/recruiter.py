@@ -1,3 +1,4 @@
+import shutil
 import sys
 import requests
 import json
@@ -127,7 +128,6 @@ class Recruiter(Base):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
-
     subparsers = parser.add_subparsers(
         help="Type of recruiter to use.", dest="recruiter_type"
     )
@@ -231,8 +231,6 @@ if __name__ == "__main__":
         cookies_file=identity + "/cookies.json", headers_file=identity + "/headers.json"
     )
 
-
-
     if args.recruiter_type == "connect":
         if args.message:
             if os.path.exists(args.message):
@@ -245,6 +243,7 @@ if __name__ == "__main__":
         with open(args.leads, "r", encoding="utf-8") as f:
             leads = json.load(f)
 
+        connect_exist = False
         if os.path.exists(args.connect_file):
             if args.connect_file.endswith(".csv"):
                 df = pd.read_csv(args.connect_file)
@@ -252,12 +251,14 @@ if __name__ == "__main__":
                 df = pd.read_json(args.connect_file)
             else:
                 raise Exception("Invalid file type")
+            
+            connect_exist = True
         
             existing_connections = set(df["profile_id"].values)
         else:
             existing_connections = set()
         recruiter.get_lead_data_filtered(leads, existing_connections)
-        
+        count = 0
         for lead in recruiter.filtered_leads:
             try:
                 print(f'Connecting to {lead["first_name"]} {lead["last_name"]}...')
@@ -275,16 +276,40 @@ if __name__ == "__main__":
                 delay = random.randint(args.send_delay_min, args.send_delay_max)
                 print(f"Waiting for {delay} seconds...")
                 time.sleep(delay)
+
             except KeyboardInterrupt:
                 break
+            finally:
+                count += 1
+
         if recruiter.valid_connections:
             print("Writing valid connections to file...")
-            writer = csv.DictWriter(
-                open(args.connect_file, "w", encoding="utf-8"),
-                fieldnames=["first_name", "last_name", "profile_id"],
-            )
-            writer.writeheader()
-            writer.writerows(recruiter.valid_connections)
+            if connect_exist:
+                writer = csv.DictWriter(
+                    open(args.connect_file, "a", encoding="utf-8"),
+                    fieldnames=["first_name", "last_name", "profile_id"],
+                )
+                writer.writerows(recruiter.valid_connections)
+            else:
+                writer = csv.DictWriter(
+                    open(args.connect_file, "w", encoding="utf-8"),
+                    fieldnames=["first_name", "last_name", "profile_id"],
+                )
+                writer.writeheader()
+                writer.writerows(recruiter.valid_connections)
+        if count + len(existing_connections) == len(recruiter.filtered_leads):
+            print("All leads have been processed")
+            ## move leads file to done folder
+            ## get the file path without the file name
+            path = os.path.dirname(args.leads)
+            ## add done folder to the path
+            path = os.path.join(path, "done")
+            ## create the done folder if it does not exist
+            if not os.path.exists(path):
+                os.makedirs(path)
+            ## move the leads file to the done folder
+            shutil.move(args.leads, path)
+
 
     elif args.recruiter_type == "find":
         recruiter.get_leads(
