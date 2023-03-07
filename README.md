@@ -209,7 +209,7 @@ This is a guide on how to send out leads from a given identity using data retrie
     ```
     
     ```powershell
-    ./scripts/windows/recruiter.bat
+    scripts\windows\recruiter.bat
     ```
     
     ```powershell
