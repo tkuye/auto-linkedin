@@ -1,4 +1,4 @@
-python3 -m src.sales connect 
+python3 -m src.sales connect \
 --leads data/sales/leads/leads_ranked.json \
 --identity data/identities/matt \
 --message data/sales/message/sales.txt \
