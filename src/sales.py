@@ -17,13 +17,13 @@ tqdm.pandas()
 
 
 class Sales(Base):
-    def __init__(self, headers: str = "", cookies: str = ""):
+    def __init__(self, headers: str = "", cookies: str = "", credentials: str = ""):
         """
         Args:
             headers (str): path to the headers.json file
             cookies (str): path to the cookies.json file
         """
-        super().__init__(headers, cookies)
+        super().__init__(credentials, headers, cookies)
         self.nlp = spacy.load("en_core_web_md")
 
     def words_to_spans(self, words):
@@ -272,8 +272,15 @@ if __name__ == "__main__":
     find_parser.add_argument(
         "--identity",
         type=str,
-        required=True,
+        default="",
         help="The identity for the profile you want to use. Must be a directory with headers and cookies.json.",
+    )
+
+    find_parser.add_argument(
+        "--identity_file",
+        type=str,
+        default="",
+        help="The identity file for the profile you want to use.",
     )
 
     connect_parser.add_argument(
@@ -282,8 +289,15 @@ if __name__ == "__main__":
     connect_parser.add_argument(
         "--identity",
         type=str,
-        required=True,
+        default="",
         help="The identity for the profile you want to use. Must be a directory with headers and cookies.json.",
+    )
+
+    connect_parser.add_argument(
+        "--identity_file",
+        type=str,
+        default="",
+        help="The identity file for the profile you want to use.",
     )
     connect_parser.add_argument(
         "--send_delay_min",
@@ -323,7 +337,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # check lead file extension
+   
     if args.leads.endswith(".json"):
         leads = pd.read_json(args.leads)
     elif args.leads.endswith(".csv"):
@@ -361,8 +375,11 @@ if __name__ == "__main__":
     elif args.command == "find":
         header_file = args.identity + "/headers.json"
         cookie_file = args.identity + "/cookies.json"
-        sales.load_headers(header_file)
-        sales.load_cookies(cookie_file)
+        
+        if not os.path.exists(args.identity) and not os.path.exists(args.identity_file):
+            raise Exception("No identity file or directory found.")
+
+        sales = Sales(header_file, cookie_file, args.identity_file)
         sales.get_leads(
             args.url,
             args.start,
@@ -375,8 +392,10 @@ if __name__ == "__main__":
     elif args.command == "connect":
         header_file = args.identity + "/headers.json"
         cookie_file = args.identity + "/cookies.json"
-        sales.load_headers(header_file)
-        sales.load_cookies(cookie_file)
+        if not os.path.exists(args.identity) and not os.path.exists(args.identity_file):
+            raise Exception("No identity file or directory found.")
+
+        sales = Sales(header_file, cookie_file, args.identity_file)
 
         if args.message:
             if os.path.exists(args.message):

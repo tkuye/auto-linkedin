@@ -9,13 +9,16 @@ class MessageError(Exception):
 
 
 class Base:
-    def __init__(self, headers_file: str = "", cookies_file: str = ""):
+    def __init__(self, credentials_file: str = None, headers_file: str = None, cookies_file: str = None):
         self.headers = {}
         self.cookies = {}
         if headers_file:
             self.load_headers(headers_file)
         if cookies_file:
             self.load_cookies(cookies_file)
+        if credentials_file:
+            self.load_credentials(credentials_file)
+        
         self.filtered_leads = []
         self.user_agents = [
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Safari/605.1.15",
@@ -36,6 +39,12 @@ class Base:
         with open(cookies_file, "r", encoding="utf-8") as f:
             cookies = json.load(f)
         self.cookies = cookies
+    
+    def load_credentials(self, credentials_file):
+        with open(credentials_file, "r", encoding="utf-8") as f:
+            credentials = json.load(f)
+        self.cookies = credentials.get("cookies", {})
+        self.headers = credentials.get("headers", {})
 
     def create_message(self, message: str, name: str = None, person: str = None):
         if not message:
@@ -84,7 +93,7 @@ class Base:
                 url = url.replace("count=25", f"count={count}")
                 
 
-                response = requests.get(url, cookies=self.cookies, headers=self.headers)
+                response = requests.get(url, cookies=self.cookies, headers=self.headers, timeout=10)
                 if response.status_code != 200:
                     print(f"page: {page} - error {response.status_code} - {response.text}")
                     break

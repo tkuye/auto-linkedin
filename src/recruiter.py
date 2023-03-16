@@ -16,8 +16,8 @@ class MessageError(Exception):
 
 
 class Recruiter(Base):
-    def __init__(self, headers_file, cookies_file):
-        super().__init__(headers_file, cookies_file)
+    def __init__(self, headers_file=None, cookies_file=None, credentials_file=None):
+        super().__init__(credentials_file, headers_file, cookies_file)
         self.filtered_leads = []
         self.valid_connections = []
 
@@ -34,6 +34,7 @@ class Recruiter(Base):
             params=params,
             cookies=self.cookies,
             headers=self.headers,
+            timeout=10,
         )
         status = response.status_code
         if status == 200:
@@ -174,8 +175,15 @@ if __name__ == "__main__":
     connect_parser.add_argument(
         "--identity",
         type=str,
-        required=True,
+        default="",
         help="The identity for the profile you want to use. Must be a directory with headers and cookies.json.",
+    )
+
+    connect_parser.add_argument(
+        "--identity_file",
+        type=str,
+        default="",
+        help="The identity file for the profile you want to use.",
     )
 
     find_parser = subparsers.add_parser(
@@ -215,20 +223,30 @@ if __name__ == "__main__":
     find_parser.add_argument(
         "--identity",
         type=str,
-        required=True,
+        default="",
         help="The identity for the profile you want to use. Must be a directory with headers and cookies.json.",
+    )
+
+    find_parser.add_argument(
+        "--identity_file",
+        type=str,
+        default="",
+        help="The identity file for the profile you want to use.",
     )
 
     args = parser.parse_args()
 
     identity = args.identity
+    identity_file = args.identity_file
 
-    if not os.path.exists(identity):
-        print(f"Identity {identity} does not exist")
+    if not os.path.exists(identity) and not os.path.exists(identity_file):
+        print(f"Identity does not exist")
         sys.exit(1)
 
     recruiter = Recruiter(
-        cookies_file=identity + "/cookies.json", headers_file=identity + "/headers.json"
+        cookies_file=identity + "/cookies.json", 
+        headers_file=identity + "/headers.json",
+        credentials_file=identity_file
     )
 
     if args.recruiter_type == "connect":
